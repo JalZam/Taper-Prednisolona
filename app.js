@@ -551,5 +551,45 @@ function printReport() {
     });
 })();
 
+// ── Reset completo ────────────────────────────────────────────
+function fullReset() {
+  // 1. Calculadora de dosis
+  document.getElementById('weight').value   = '';
+  document.getElementById('dose-per-kg').value = '0.5';
+  document.getElementById('dose-raw').textContent = '— mg/día';
+  document.getElementById('dose-breakdown').style.display = 'none';
+  selectedDoseValue = null;
+  _rawDose = _floor5 = _ceil5 = null;
+
+  // 2. Fecha de inicio
+  document.getElementById('global-start').value = '';
+  globalStart = null;
+
+  // 3. Filas del taper
+  rows   = [];
+  nextId = 1;
+  renderRows();
+
+  // 4. Auto-reglas → dejar una en blanco como al inicio
+  autoRules   = [];
+  nextRuleId  = 1;
+  addAutoRule();
+
+  // 5. Cerrar el acordeón de auto-reducción
+  const autoBody = document.getElementById('auto-body');
+  const autoChev = document.getElementById('auto-chev');
+  if (!autoBody.classList.contains('collapsed')) {
+    autoBody.classList.add('collapsed');
+    autoChev.classList.remove('open');
+  }
+
+  // 6. Preview vacío
+  renderPreview();
+
+  // 7. Scroll al inicio
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // ── Init ──────────────────────────────────────────────────────
+
 addAutoRule(); // una regla inicial de ejemplo

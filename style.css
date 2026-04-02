@@ -71,6 +71,32 @@ body {
   color: var(--text-muted);
   font-weight: 500;
 }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.btn-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.38rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-reset:hover {
+  background: #fff1f2;
+  border-color: #fca5a5;
+  color: var(--danger);
+}
 
 /* ── MAIN CONTENT ─────────────────────────────────────────── */
 .main-content {
