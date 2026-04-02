@@ -101,34 +101,117 @@ function handleStartChange() {
 }
 
 // ── Calculadora de dosis ──────────────────────────────────────
+let selectedDoseValue = null; // dosis final seleccionada por el médico
+let _rawDose = null;          // dosis exacta sin redondear
+let _floor5  = null;
+let _ceil5   = null;
+
 function calcDose() {
   const w  = parseFloat(document.getElementById('weight').value);
   const mk = parseFloat(document.getElementById('dose-per-kg').value);
-  const resEl = document.getElementById('dose-result');
-  const btn   = document.getElementById('use-dose-btn');
+  const rawEl      = document.getElementById('dose-raw');
+  const breakdown  = document.getElementById('dose-breakdown');
+
+  // Reset
+  selectedDoseValue = null;
+  document.getElementById('selected-dose-row').style.display = 'none';
+  document.getElementById('warn-80').style.display = 'none';
+  document.getElementById('btn-round-down').classList.remove('selected');
+  document.getElementById('btn-round-up').classList.remove('selected');
+
   if (!w || !mk || w <= 0) {
-    resEl.textContent = '— mg/día';
-    resEl.removeAttribute('data-dose');
-    btn.disabled = true;
+    rawEl.textContent = '— mg/día';
+    breakdown.style.display = 'none';
+    _rawDose = null;
     return;
   }
-  const dose = Math.round(w * mk * 2) / 2; // redondear a 0.5
-  resEl.textContent = `${dose} mg/día`;
-  resEl.setAttribute('data-dose', dose);
-  btn.disabled = false;
+
+  _rawDose = w * mk;
+  _floor5  = Math.floor(_rawDose / 5) * 5;
+  _ceil5   = Math.ceil(_rawDose / 5) * 5;
+  // Si ya es múltiplo de 5, floor y ceil son iguales
+  if (_floor5 === 0) _floor5 = 5;
+
+  rawEl.textContent = `${w} kg × ${mk} mg/kg = ${_rawDose.toFixed(1)} mg/día`;
+
+  // Mostrar breakdown
+  breakdown.style.display = 'block';
+  document.getElementById('breakdown-exact').textContent = `${_rawDose.toFixed(1)} mg`;
+  document.getElementById('round-down-val').textContent = _floor5;
+  document.getElementById('round-up-val').textContent   = _ceil5;
+
+  // Si ya es exactamente múltiplo de 5, marcar ambos iguales
+  if (_floor5 === _ceil5) {
+    document.getElementById('btn-round-down').textContent = `✓ ${_floor5} mg (exacto)`;
+    document.getElementById('btn-round-up').style.display = 'none';
+  } else {
+    document.getElementById('btn-round-up').style.display = '';
+    document.getElementById('btn-round-down').innerHTML =
+      `<span class="round-arrow">↓</span> <span id="round-down-val">${_floor5}</span> mg`;
+    document.getElementById('btn-round-up').innerHTML =
+      `<span class="round-arrow">↑</span> <span id="round-up-val">${_ceil5}</span> mg`;
+  }
+
+  // Advertencia si >80 mg
+  if (_rawDose > 80) {
+    document.getElementById('warn-80').style.display = 'flex';
+    document.getElementById('btn-use-calc').textContent =
+      `Continuar con ${_ceil5} mg (calculada)`;
+  }
+}
+
+function selectDose(direction) {
+  // Solo operable si >80mg no ha aparecido, o si el usuario ya eligió
+  if (_rawDose > 80 && selectedDoseValue === null) {
+    // Si el usuario intenta elegir sin resolver la advertencia >80, ignorar
+    return;
+  }
+  const dose = direction === 'down' ? _floor5 : _ceil5;
+  selectedDoseValue = dose;
+  _showSelectedDose(dose);
+}
+
+function forceMaxDose(maxVal) {
+  // maxVal: 80 (usar KDIGO) o null (usar la calculada, redondeada hacia arriba)
+  let dose;
+  if (maxVal === 80) {
+    // Redondear 80 al múltiplo de 5 más cercano hacia abajo (80 ya es múltiplo de 5)
+    dose = 80;
+  } else {
+    // Usar la dosis calculada redondeada al múltiplo de 5 más cercano hacia arriba
+    dose = _ceil5;
+  }
+  selectedDoseValue = dose;
+  document.getElementById('warn-80').style.display = 'none'; // ocultar warning después de elegir
+  // Ahora habilitar las opciones de redondeo si la elegida es la calculada
+  if (maxVal === null) {
+    _showSelectedDose(dose);
+  } else {
+    _showSelectedDose(dose);
+  }
+}
+
+function _showSelectedDose(dose) {
+  const row = document.getElementById('selected-dose-row');
+  document.getElementById('selected-value').textContent = `${dose} mg/día`;
+  row.style.display = 'flex';
+  // Marcar botón seleccionado
+  document.getElementById('btn-round-down').classList.toggle('selected', dose === _floor5 && _floor5 !== _ceil5);
+  document.getElementById('btn-round-up').classList.toggle('selected', dose === _ceil5 && _floor5 !== _ceil5);
 }
 
 function useDose() {
-  const dose = parseFloat(document.getElementById('dose-result').getAttribute('data-dose'));
-  if (!dose) return;
+  if (selectedDoseValue === null) return;
+  const dose = selectedDoseValue;
   if (rows.length === 0) {
-    addRow(dose, 7, 'días');
+    addRow(dose, 28, 'días'); // 4 semanas por defecto
   } else {
     rows[0].dose = dose;
     renderRows();
     renderPreview();
   }
 }
+
 
 // ── Preset KDIGO 2021 — Taper rápido ~16 semanas ─────────────
 function applyKDIGOPreset() {
@@ -137,9 +220,11 @@ function applyKDIGOPreset() {
     alert('Por favor seleccione una fecha de inicio primero.');
     return;
   }
-  const doseEl = document.getElementById('dose-result');
-  const raw = parseFloat(doseEl?.getAttribute('data-dose') || 0);
-  const startDose = Math.min(raw || 60, 80);
+  if (selectedDoseValue === null) {
+    alert('Por favor calcule y seleccione una dosis inicial primero (calculadora de dosis arriba).');
+    return;
+  }
+  const startDose = selectedDoseValue;
 
   rows = []; nextId = 1;
   globalStart = parseDate(startInput);
@@ -151,6 +236,7 @@ function applyKDIGOPreset() {
   });
   recalcDates();
 }
+
 
 function generateKDIGOSteps(startDose) {
   const D = Math.min(Math.max(startDose, 5), 80);

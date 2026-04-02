@@ -68,13 +68,41 @@
             </div>
           </div>
           <div class="field-group">
-            <label>Dosis calculada</label>
-            <div class="dose-result-box" id="dose-result">— mg/día</div>
+            <label>Cálculo</label>
+            <div class="dose-raw-box" id="dose-raw">— mg/día</div>
           </div>
-          <div class="field-group align-end">
-            <button class="btn btn-primary" onclick="useDose()" id="use-dose-btn" disabled>
-              Usar esta dosis ↓
+        </div>
+
+        <!-- Desglose de redondeo y advertencia >80mg -->
+        <div id="dose-breakdown" class="dose-breakdown" style="display:none">
+          <div class="breakdown-row">
+            <span class="breakdown-label">Dosis exacta:</span>
+            <span class="breakdown-exact" id="breakdown-exact"></span>
+            <span class="breakdown-sep">→ múltiplos de 5:</span>
+            <button class="btn-round down" id="btn-round-down" onclick="selectDose('down')">
+              <span class="round-arrow">↓</span> <span id="round-down-val"></span> mg
             </button>
+            <button class="btn-round up" id="btn-round-up" onclick="selectDose('up')">
+              <span class="round-arrow">↑</span> <span id="round-up-val"></span> mg
+            </button>
+          </div>
+          <!-- Advertencia >80mg -->
+          <div id="warn-80" class="warn-80" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div class="warn-text">
+              <strong>Dosis calculada supera 80 mg/día.</strong>
+              Según KDIGO 2021 para enfermedades glomerulares, se recomienda no exceder <strong>80 mg/día</strong>.
+              <div class="warn-actions">
+                <button class="btn-warn-choice kdigo" onclick="forceMaxDose(80)">Usar 80 mg (KDIGO recomendado)</button>
+                <button class="btn-warn-choice custom" id="btn-use-calc" onclick="forceMaxDose(null)">Continuar con la dosis calculada</button>
+              </div>
+            </div>
+          </div>
+          <!-- Dosis seleccionada -->
+          <div id="selected-dose-row" class="selected-dose-row" style="display:none">
+            <span class="selected-label">Dosis a usar:</span>
+            <span class="selected-value" id="selected-value"></span>
+            <button class="btn btn-primary btn-sm-use" onclick="useDose()">Usar esta dosis ↓</button>
           </div>
         </div>
 

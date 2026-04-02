@@ -128,10 +128,10 @@ body {
 /* ── CALCULADORA ──────────────────────────────────────────── */
 .calc-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 1rem;
   align-items: end;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.75rem;
 }
 .field-group { display: flex; flex-direction: column; gap: 0.35rem; }
 .field-group label {
@@ -188,17 +188,105 @@ body {
 .select-wrap select:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
 
 /* Dose result box */
-.dose-result-box {
+/* Raw calculation display */
+.dose-raw-box {
   padding: 0.5rem 0.75rem;
-  background: var(--primary-light);
-  border: 1px solid var(--primary-mid);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--primary-dark);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text);
   font-family: 'Outfit', sans-serif;
   min-width: 100px;
 }
+
+/* Dose breakdown container */
+.dose-breakdown {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Rounding option row */
+.breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--primary-light);
+  border-bottom: 1px solid var(--primary-mid);
+}
+.breakdown-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+.breakdown-exact { font-size: 0.9rem; font-weight: 700; color: var(--dark); font-family: 'Outfit', sans-serif; }
+.breakdown-sep { font-size: 0.78rem; color: var(--text-muted); margin: 0 0.25rem; }
+
+/* Round buttons */
+.btn-round {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-round.down { background: var(--white); border-color: #94a3b8; color: var(--text); }
+.btn-round.down:hover { background: #f1f5f9; border-color: var(--primary); color: var(--primary); }
+.btn-round.up { background: var(--white); border-color: #94a3b8; color: var(--text); }
+.btn-round.up:hover { background: #f1f5f9; border-color: var(--primary); color: var(--primary); }
+.btn-round.selected { background: var(--primary); border-color: var(--primary); color: var(--white); }
+.round-arrow { font-size: 0.8rem; opacity: 0.7; }
+
+/* >80 mg warning */
+.warn-80 {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  background: #fff7ed;
+  border-bottom: 1px solid #fed7aa;
+  color: #92400e;
+}
+.warn-80 svg { flex-shrink: 0; stroke: #d97706; margin-top: 1px; }
+.warn-text { font-size: 0.8rem; line-height: 1.5; }
+.warn-text strong { color: #7c2d12; }
+.warn-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+.btn-warn-choice {
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-warn-choice.kdigo { background: #16a34a; border-color: #16a34a; color: white; }
+.btn-warn-choice.kdigo:hover { background: #15803d; }
+.btn-warn-choice.custom { background: transparent; border-color: #d97706; color: #92400e; }
+.btn-warn-choice.custom:hover { background: #fef3c7; }
+
+/* Selected dose confirmation */
+.selected-dose-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  background: #f0fdf4;
+  border-top: 1px solid #bbf7d0;
+  flex-wrap: wrap;
+}
+.selected-label { font-size: 0.78rem; font-weight: 600; color: #166534; }
+.selected-value { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 800; color: #15803d; }
+.btn-sm-use { padding: 0.35rem 0.85rem; font-size: 0.8rem; margin-left: auto; }
+
 
 /* KDIGO box */
 .kdigo-box {
