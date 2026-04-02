@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taper de Prednisolona — Calculadora de Esquema de Reducción</title>
+  <meta name="description" content="Herramienta clínica para diseñar esquemas de reducción de prednisolona (taper). Incluye calculadora de dosis por peso, esquema KDIGO 2021 y generación de PDF para el paciente." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 40 24" fill="none">
+          <rect x="0" y="4" width="40" height="16" rx="8" fill="#2563eb"/>
+          <rect x="0" y="4" width="20" height="16" rx="8" fill="#1d4ed8"/>
+          <line x1="20" y1="4" x2="20" y2="20" stroke="white" stroke-width="1.5"/>
+        </svg>
+        <div>
+          <div class="logo-title">Taper de Prednisolona</div>
+          <div class="logo-sub">Calculadora de Esquema de Reducción</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="visit-counter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span id="visit-count">...</span> visitas
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- ── Card 1: Calculadora de Dosis ── -->
+    <div class="card" id="calc-card">
+      <div class="card-header toggle-header" onclick="toggleSection('calc-body','calc-chev')">
+        <div class="card-title">
+          <span class="card-icon">💊</span>
+          <h2>Calculadora de Dosis Inicial</h2>
+        </div>
+        <svg id="calc-chev" class="chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div id="calc-body" class="card-body">
+        <div class="calc-grid">
+          <div class="field-group">
+            <label for="weight">Peso del paciente</label>
+            <div class="input-addon">
+              <input type="number" id="weight" placeholder="ej. 70" min="1" max="250" oninput="calcDose()" />
+              <span class="addon">kg</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="dose-per-kg">Dosis</label>
+            <div class="select-wrap">
+              <select id="dose-per-kg" onchange="calcDose()">
+                <option value="0.2">0.2 mg/kg</option>
+                <option value="0.3">0.3 mg/kg</option>
+                <option value="0.4">0.4 mg/kg</option>
+                <option value="0.5" selected>0.5 mg/kg</option>
+                <option value="0.8">0.8 mg/kg</option>
+                <option value="1">1 mg/kg</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Dosis calculada</label>
+            <div class="dose-result-box" id="dose-result">— mg/día</div>
+          </div>
+          <div class="field-group align-end">
+            <button class="btn btn-primary" onclick="useDose()" id="use-dose-btn" disabled>
+              Usar esta dosis ↓
+            </button>
+          </div>
+        </div>
+
+        <div class="kdigo-box">
+          <div class="kdigo-badge">KDIGO 2021</div>
+          <div class="kdigo-text">
+            <strong>Taper Rápido — Enfermedades Glomerulares</strong>
+            <p>Inicio con dosis calculada (máx. 80 mg/día) con reducción progresiva hasta 5 mg en ≈16 semanas. Requiere definir fecha de inicio y peso del paciente.</p>
+          </div>
+          <button class="btn btn-outline-primary" onclick="applyKDIGOPreset()" id="kdigo-btn">
+            Aplicar esquema →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 2: Constructor del Taper ── -->
+    <div class="card" id="builder-card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon">📅</span>
+          <h2>Constructor del Taper</h2>
+        </div>
+        <div class="start-row">
+          <label for="global-start">Fecha de inicio:</label>
+          <input type="date" id="global-start" onchange="handleStartChange()" />
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- Auto Reduction Rules -->
+        <div class="auto-section">
+          <div class="auto-header toggle-header" onclick="toggleSection('auto-body','auto-chev')">
+            <span class="label-sm">⚡ Reducción Automática (opcional)</span>
+            <svg id="auto-chev" class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div id="auto-body" class="auto-body collapsed">
+            <p class="auto-hint">Define reglas encadenadas. Ej: reducir 10 mg cada semana hasta 20 mg; luego 2.5 mg cada 2 semanas hasta 2.5 mg.</p>
+            <div id="auto-rules-list"></div>
+            <div class="auto-actions">
+              <button class="btn btn-ghost" onclick="addAutoRule()">+ Agregar regla</button>
+              <button class="btn btn-primary-sm" onclick="applyAutoRules()">Generar taper automático →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Taper Table -->
+        <div class="taper-table-wrap">
+          <table class="taper-table">
+            <thead>
+              <tr>
+                <th>Dosis <span class="th-sub">mg/día</span></th>
+                <th>Duración</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="taper-body"></tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button class="btn btn-ghost" onclick="addRow()">+ Agregar dosis</button>
+          <button class="btn btn-danger-ghost" onclick="clearAll()">↺ Limpiar todo</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Card 3: Vista Previa ── -->
+    <div class="card" id="preview-card">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon">📊</span>
+          <h2>Vista Previa del Esquema</h2>
+        </div>
+        <button class="btn btn-primary print-btn" onclick="printReport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Generar PDF / Imprimir
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="preview-empty" class="preview-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" width="48" height="48"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/></svg>
+          <p>Agrega filas de dosis para ver el esquema.</p>
+        </div>
+        <div id="preview-content" style="display:none">
+          <div id="preview-bars" class="preview-bars"></div>
+          <div id="preview-table-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>Herramienta clínica basada en guías <strong>KDIGO 2021</strong> · Uso médico exclusivo · No reemplaza el criterio clínico del especialista</p>
+  </footer>
+
+  <!-- ══════════════════════════════════════════════
+       SECCIÓN DE IMPRESIÓN — oculta en pantalla
+  ══════════════════════════════════════════════ -->
+  <div id="print-section" class="print-only">
+    <div class="pr-header">
+      <div class="pr-brand">
+        <span class="pr-brand-mark">▮▮</span> Taper de Prednisolona
+      </div>
+      <div id="pr-doc-date" class="pr-doc-date"></div>
+    </div>
+
+    <h1 class="pr-title">Esquema de Reducción de Prednisolona</h1>
+    <h2 class="pr-subtitle">Instrucciones para el Paciente</h2>
+
+    <div class="pr-patient-box" id="pr-patient-box"></div>
+
+    <div class="pr-summary-grid" id="pr-summary"></div>
+
+    <table class="pr-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Período</th>
+          <th>Dosis Diaria</th>
+          <th>Duración</th>
+        </tr>
+      </thead>
+      <tbody id="pr-tbody"></tbody>
+    </table>
+
+    <div class="pr-instructions">
+      <h3>📋 Instrucciones Importantes</h3>
+      <ol>
+        <li><strong>Tome la prednisolona con el desayuno o con alimentos</strong> para reducir el malestar estomacal.</li>
+        <li><strong>No suspenda el medicamento de forma brusca</strong> sin consultar a su médico, incluso si se siente bien.</li>
+        <li>Si olvida una dosis, tómela en cuanto recuerde ese mismo día. Si ya es casi la hora de la siguiente dosis, omita la olvidada.</li>
+        <li>Consulte a su médico si presenta: fiebre, infección, aumento brusco de peso, presión arterial alta, cambios en el estado de ánimo o visión borrosa.</li>
+        <li>Informe a cualquier médico o dentista que lo atienda que está tomando prednisolona.</li>
+        <li>No olvide tomar calcio y vitamina D según indicación de su médico durante el tratamiento.</li>
+      </ol>
+    </div>
+
+    <div class="pr-disclaimer">
+      Esquema diseñado por su médico tratante · Basado en guías <strong>KDIGO 2021</strong> · jalzam.github.io/taper-prednisolona
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
