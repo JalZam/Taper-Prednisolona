@@ -697,3 +697,88 @@ body {
   .tl-dates { display: none; }
   .preview-table { font-size: 0.76rem; }
 }
+
+/* ── FLUJO EN 3 PASOS (2026-10-12) ──────────────────────────── */
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.step-card.done .step-num { background: var(--success); }
+.step-card.done .step-num::before { content: '✓'; }
+.step-card.done .step-num { font-size: 0; }
+.step-card.done .step-num::before { font-size: 0.85rem; }
+.step-status {
+  font-size: 0.76rem; font-weight: 600; color: var(--text-muted);
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 0.25rem 0.65rem; border-radius: 999px; white-space: nowrap;
+}
+.step-card.done .step-status { color: var(--success); background: #f0fdf4; border-color: #bbf7d0; }
+.step-card.locked .card-body { opacity: 0.55; }
+.step-card.locked .step-status { color: var(--warning); background: #fffbeb; border-color: #fde68a; }
+
+.calc-grid-5 { grid-template-columns: 2fr 1.2fr 1fr 1.2fr 1.6fr; }
+.field-group label .opt { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+.text-input {
+  width: 100%; padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 0.9rem; color: var(--dark); background: var(--white);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.text-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.selected-ok { font-size: 0.78rem; color: var(--success); font-weight: 600; margin-left: auto; }
+
+.paso-msg {
+  padding: 0.65rem 0.9rem; margin-bottom: 1rem;
+  background: var(--primary-light); border: 1px solid var(--primary-mid);
+  border-left: 4px solid var(--primary); border-radius: var(--radius-sm);
+  color: var(--primary-dark); font-size: 0.85rem; font-weight: 500;
+}
+.paso-msg.warn { background: #fff7ed; border-color: #fed7aa; border-left-color: var(--warning); color: #92400e; }
+
+.option-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.option-card {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  padding: 1.1rem 1.15rem;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  background: var(--white); transition: border-color 0.15s, box-shadow 0.15s;
+}
+.option-card:hover { border-color: var(--primary-mid); box-shadow: var(--shadow-md); }
+.option-card.active { border-color: var(--primary); background: var(--primary-light); }
+.option-card h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: var(--dark); }
+.option-card p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; flex: 1; }
+.option-card .btn { align-self: flex-start; }
+.option-card .btn:disabled, .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.option-head { display: flex; align-items: center; gap: 0.5rem; min-height: 24px; }
+.option-icon { font-size: 1.1rem; }
+.option-tag {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+  color: var(--success); background: #f0fdf4; border: 1px solid #bbf7d0;
+  padding: 0.1rem 0.5rem; border-radius: 999px;
+}
+#opt-rules .auto-body { margin-top: 0.5rem; }
+#opt-rules .auto-rule-row { flex-wrap: wrap; }
+.table-hint { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+#preview-content .preview-bars { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+
+.toast {
+  position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%) translateY(20px);
+  max-width: min(92vw, 560px); padding: 0.8rem 1.1rem;
+  background: var(--dark); color: #fff; font-size: 0.88rem; font-weight: 500;
+  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 200;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.warn { background: #92400e; }
+
+@media (max-width: 900px) {
+  .calc-grid-5 { grid-template-columns: 1fr 1fr; }
+  .calc-grid-5 .field-wide { grid-column: 1 / -1; }
+  .option-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .calc-grid-5 { grid-template-columns: 1fr 1fr; }
+  .step-status { white-space: normal; }
+}

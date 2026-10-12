@@ -98,6 +98,7 @@ function handleStartChange() {
   const val = document.getElementById('global-start').value;
   globalStart = parseDate(val);
   recalcDates();
+  updateGate();
 }
 
 // ── Calculadora de dosis ──────────────────────────────────────
@@ -124,6 +125,7 @@ function calcDose() {
   if (!w || !mk || w <= 0) {
     rawEl.textContent = '— mg/día';
     breakdown.style.display = 'none';
+    updateGate();
     return;
   }
 
@@ -152,6 +154,7 @@ function calcDose() {
     // Caso: no es múltiplo de 5 y ≤ 80 — mostrar opciones de redondeo
     _showRoundingOptions();
   }
+  updateGate();
 }
 
 function _showRoundingOptions() {
@@ -186,23 +189,30 @@ function forceMaxDose(maxVal) {
       _showRoundingOptions();
     }
   }
+  updateGate();
 }
 
 function _showSelected(dose) {
   document.getElementById('selected-value').textContent = `${dose} mg/día`;
   _show('selected-dose-row');
+  updateGate();
 }
 
-function useDose() {
-  if (selectedDoseValue === null) return;
+function startManual() {
+  const startInput = document.getElementById('global-start').value;
+  if (!startInput) { showMsg('paso2-msg', 'Falta la fecha de inicio (paso 1).'); return; }
+  if (selectedDoseValue === null) { showMsg('paso2-msg', 'Falta elegir la dosis inicial (paso 1).'); return; }
+  globalStart = parseDate(startInput);
+  marcarOpcion('opt-manual');
   if (rows.length === 0) {
     addRow(selectedDoseValue, 28, 'días');
   } else {
     rows[0].dose = selectedDoseValue;
-    renderRows();
-    renderPreview();
+    recalcDates();
   }
+  irAlPaso3();
 }
+const useDose = startManual; // compatibilidad
 
 function _show(id) { document.getElementById(id).style.display = ''; }
 function _hide(id) { document.getElementById(id).style.display = 'none'; }
@@ -211,15 +221,10 @@ function _hide(id) { document.getElementById(id).style.display = 'none'; }
 // ── Preset KDIGO 2021 — Taper rápido 12–18 semanas ───────────
 function applyKDIGOPreset() {
   const startInput = document.getElementById('global-start').value;
-  if (!startInput) {
-    alert('Por favor seleccione una fecha de inicio primero.');
-    return;
-  }
-  if (selectedDoseValue === null) {
-    alert('Por favor calcule y seleccione una dosis inicial primero (calculadora de dosis arriba).');
-    return;
-  }
+  if (!startInput) { showMsg('paso2-msg', 'Falta la fecha de inicio (paso 1).'); return; }
+  if (selectedDoseValue === null) { showMsg('paso2-msg', 'Falta elegir la dosis inicial (paso 1).'); return; }
   const startDose = selectedDoseValue;
+  marcarOpcion('opt-kdigo');
 
   rows = []; nextId = 1;
   globalStart = parseDate(startInput);
@@ -230,6 +235,7 @@ function applyKDIGOPreset() {
     addRow(s.dose, s.days, unit);
   });
   recalcDates();
+  irAlPaso3();
 }
 
 
@@ -259,7 +265,7 @@ function generateKDIGOSteps(startDose) {
 // ── Auto-reglas ───────────────────────────────────────────────
 function addAutoRule() {
   const last = autoRules[autoRules.length - 1];
-  const fromDose = last ? last.untilDose : '';
+  const fromDose = last ? last.untilDose : (selectedDoseValue !== null ? selectedDoseValue : '');
   autoRules.push({ id: nextRuleId++, fromDose, reducBy: 10, everyWeeks: 1, untilDose: '' });
   renderAutoRules();
 }
@@ -309,11 +315,14 @@ function syncNextFromDose(id) {
 }
 
 function applyAutoRules() {
-  if (!autoRules.length) { alert('Agrega al menos una regla primero.'); return; }
   const startInput = document.getElementById('global-start').value;
-  if (!startInput) { alert('Por favor seleccione una fecha de inicio primero.'); return; }
+  if (!startInput) { showMsg('paso2-msg', 'Falta la fecha de inicio (paso 1).'); return; }
+  if (!autoRules.length) { showMsg('paso2-msg', 'Agrega al menos una regla.'); return; }
+  const incompleta = autoRules.some(r => isNaN(parseFloat(r.fromDose)) || isNaN(parseFloat(r.reducBy)) || isNaN(parseFloat(r.untilDose)));
+  if (incompleta) { showMsg('paso2-msg', 'Hay reglas sin completar: revisa "desde", "reducir" y "hasta".'); return; }
   globalStart = parseDate(startInput);
   rows = []; nextId = 1;
+  marcarOpcion('opt-rules');
 
   autoRules.forEach((rule, ruleIdx) => {
     const from   = parseFloat(rule.fromDose);
@@ -324,14 +333,15 @@ function applyAutoRules() {
 
     let cur = from;
     // Agregar dosis inicial del rango (solo en primera regla o si no solapó)
-    if (ruleIdx === 0) addRow(cur, weeks * 7, 'días');
+    if (ruleIdx === 0) addRow(cur, weeks * 7, 'semanas');
 
     while (cur > until + 0.001) {
       cur = +Math.max(cur - reducBy, until).toFixed(2);
-      addRow(cur, weeks * 7, 'días');
+      addRow(cur, weeks * 7, 'semanas');
     }
   });
   recalcDates();
+  irAlPaso3();
 }
 
 // ── Renderizar filas de la tabla ──────────────────────────────
@@ -397,9 +407,16 @@ function handleDurChange(id) {
 }
 
 // ── Limpiar todo ──────────────────────────────────────────────
+let _clearArmed = null;
 function clearAll() {
-  if (rows.length && !confirm('¿Eliminar todo el esquema?')) return;
+  if (rows.length && !_clearArmed) {
+    showMsg('paso3-msg', 'Pulsa "Limpiar esquema" otra vez para confirmar. Se borrarán todos los escalones.', 'warn');
+    _clearArmed = setTimeout(() => { _clearArmed = null; }, 4000);
+    return;
+  }
+  clearTimeout(_clearArmed); _clearArmed = null;
   rows = []; nextId = 1;
+  document.querySelectorAll('.option-card.active').forEach(el => el.classList.remove('active'));
   renderRows(); renderPreview();
 }
 
@@ -409,13 +426,20 @@ function renderPreview() {
   const content = document.getElementById('preview-content');
   const validRows = rows.filter(r => parseFloat(r.dose) > 0);
 
-  if (!validRows.length) {
+  if (!rows.length) {
     empty.style.display = 'flex';
     content.style.display = 'none';
+    updateGate();
     return;
   }
   empty.style.display = 'none';
   content.style.display = 'block';
+  updateGate();
+  if (!validRows.length) {
+    document.getElementById('preview-bars').innerHTML = '';
+    document.getElementById('preview-table-wrap').innerHTML = '';
+    return;
+  }
 
   // Timeline bars
   const maxDose = Math.max(...validRows.map(r => parseFloat(r.dose)));
@@ -474,13 +498,10 @@ function toggleSection(bodyId, chevId) {
 function printReport() {
   const validRows = rows.filter(r => parseFloat(r.dose) > 0);
   if (!validRows.length) {
-    alert('No hay dosis en el esquema para imprimir.');
+    showMsg('paso3-msg', 'No hay escalones con dosis para imprimir. Arma el esquema en el paso 2.');
     return;
   }
-
-  // Datos del paciente
-  const name   = document.getElementById('global-start').value;   // usamos para fecha
-  const patientInput = prompt('Nombre del paciente (opcional, se mostrará en el PDF):');
+  const patientInput = document.getElementById('patient-name').value;
   const startDate = validRows[0]?.startDate;
   const endDate   = validRows[validRows.length - 1]?.endDate;
   const totalDays = validRows.reduce((s, r) => s + r.days, 0);
@@ -536,6 +557,71 @@ function printReport() {
 
   window.print();
 }
+
+// ── Flujo en 3 pasos ──────────────────────────────────────────
+function showMsg(_id, text, type) {
+  // Aviso flotante siempre visible, sin importar dónde esté el scroll
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'toast show' + (type === 'warn' ? ' warn' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = 'toast'; }, 5000);
+}
+
+function updateGate() {
+  const hasDate = !!document.getElementById('global-start').value;
+  const hasDose = selectedDoseValue !== null;
+  const paso1 = document.getElementById('paso1');
+  const paso2 = document.getElementById('paso2');
+  const paso3 = document.getElementById('paso3');
+  const s1 = document.getElementById('paso1-status');
+  const s2 = document.getElementById('paso2-status');
+
+  const faltan = [];
+  if (!hasDose) faltan.push('la dosis inicial');
+  if (!hasDate) faltan.push('la fecha de inicio');
+
+  paso1.classList.toggle('done', faltan.length === 0);
+  s1.textContent = faltan.length === 0 ? '✓ Listo' : 'Falta ' + faltan.join(' y ');
+
+  const ready = faltan.length === 0;
+  paso2.classList.toggle('locked', !ready);
+  s2.textContent = ready ? 'Elige una opción' : 'Primero completa el paso 1';
+  document.getElementById('kdigo-btn').disabled  = !ready;
+  document.getElementById('manual-btn').disabled = !ready;
+  document.getElementById('rules-btn').disabled  = !hasDate;
+  document.getElementById('rules-apply-btn').disabled = !hasDate;
+
+  paso3.classList.toggle('done', rows.length > 0);
+  paso2.classList.toggle('done', rows.length > 0);
+  document.getElementById('print-btn').disabled = !rows.some(r => parseFloat(r.dose) > 0);
+}
+
+function toggleRules() {
+  const body = document.getElementById('auto-body');
+  body.classList.toggle('collapsed');
+  if (body.classList.contains('collapsed')) return;
+  if (autoRules.length === 0) {
+    addAutoRule();
+  } else if (autoRules[0].fromDose === '' && selectedDoseValue !== null) {
+    autoRules[0].fromDose = selectedDoseValue;
+    renderAutoRules();
+  }
+}
+
+function marcarOpcion(id) {
+  document.querySelectorAll('.option-card.active').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function irAlPaso3() {
+  const el = document.getElementById('paso3');
+  if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.addEventListener('DOMContentLoaded', () => { renderPreview(); updateGate(); });
 
 // ── Reset completo ────────────────────────────────────────────
 function fullReset() {

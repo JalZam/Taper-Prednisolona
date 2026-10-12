@@ -36,26 +36,34 @@
 
   <main class="main-content">
 
-    <!-- ── Card 1: Calculadora de Dosis ── -->
-    <div class="card" id="calc-card">
-      <div class="card-header toggle-header" onclick="toggleSection('calc-body','calc-chev')">
+    <!-- ── PASO 1: Paciente y dosis inicial ── -->
+    <div class="card step-card" id="paso1">
+      <div class="card-header">
         <div class="card-title">
-          <span class="card-icon">💊</span>
-          <h2>Calculadora de Dosis Inicial</h2>
+          <span class="step-num" id="paso1-num">1</span>
+          <h2>Paciente y dosis inicial</h2>
         </div>
-        <svg id="calc-chev" class="chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        <span class="step-status" id="paso1-status">Completa peso, dosis y fecha</span>
       </div>
-      <div id="calc-body" class="card-body">
-        <div class="calc-grid">
+      <div class="card-body">
+        <div class="calc-grid calc-grid-5">
+          <div class="field-group field-wide">
+            <label for="patient-name">Paciente <span class="opt">(opcional)</span></label>
+            <input type="text" id="patient-name" class="text-input" placeholder="Nombre, va en la hoja impresa" autocomplete="off" />
+          </div>
           <div class="field-group">
-            <label for="weight">Peso del paciente</label>
+            <label for="global-start">Fecha de inicio</label>
+            <input type="date" id="global-start" class="text-input" onchange="handleStartChange()" />
+          </div>
+          <div class="field-group">
+            <label for="weight">Peso</label>
             <div class="input-addon">
               <input type="number" id="weight" placeholder="ej. 70" min="1" max="250" oninput="calcDose()" />
               <span class="addon">kg</span>
             </div>
           </div>
           <div class="field-group">
-            <label for="dose-per-kg">Dosis</label>
+            <label for="dose-per-kg">Dosis por peso</label>
             <div class="select-wrap">
               <select id="dose-per-kg" onchange="calcDose()">
                 <option value="0.2">0.2 mg/kg</option>
@@ -73,12 +81,12 @@
           </div>
         </div>
 
-        <!-- Desglose de redondeo y advertencia >80mg -->
+        <!-- Desglose de redondeo, advertencia >80 mg y dosis elegida -->
         <div id="dose-breakdown" class="dose-breakdown" style="display:none">
           <div class="breakdown-row" id="breakdown-row">
             <span class="breakdown-label">Dosis exacta:</span>
             <span class="breakdown-exact" id="breakdown-exact"></span>
-            <span class="breakdown-sep">→ múltiplos de 5:</span>
+            <span class="breakdown-sep">→ elige un múltiplo de 5:</span>
             <button class="btn-round down" id="btn-round-down" onclick="selectDose('down')">
               <span class="round-arrow">↓</span> <span id="round-down-val"></span> mg
             </button>
@@ -86,110 +94,110 @@
               <span class="round-arrow">↑</span> <span id="round-up-val"></span> mg
             </button>
           </div>
-          <!-- Advertencia >80mg -->
           <div id="warn-80" class="warn-80" style="display:none">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <div class="warn-text">
-              <strong>Dosis calculada supera 80 mg/día.</strong>
-              Según KDIGO 2021 para enfermedades glomerulares, se recomienda no exceder <strong>80 mg/día</strong>.
+              <strong>La dosis calculada supera 80 mg/día.</strong>
+              KDIGO 2021 recomienda no exceder <strong>80 mg/día</strong> en enfermedades glomerulares.
               <div class="warn-actions">
-                <button class="btn-warn-choice kdigo" onclick="forceMaxDose(80)">Usar 80 mg (KDIGO recomendado)</button>
-                <button class="btn-warn-choice custom" id="btn-use-calc" onclick="forceMaxDose(null)">Continuar con la dosis calculada</button>
+                <button class="btn-warn-choice kdigo" onclick="forceMaxDose(80)">Usar 80 mg (KDIGO)</button>
+                <button class="btn-warn-choice custom" id="btn-use-calc" onclick="forceMaxDose(null)">Mantener la calculada</button>
               </div>
             </div>
           </div>
-          <!-- Dosis seleccionada -->
           <div id="selected-dose-row" class="selected-dose-row" style="display:none">
-            <span class="selected-label">Dosis a usar:</span>
+            <span class="selected-label">Dosis inicial:</span>
             <span class="selected-value" id="selected-value"></span>
-            <button class="btn btn-primary btn-sm-use" onclick="useDose()">Usar esta dosis ↓</button>
+            <span class="selected-ok">✓ lista para el paso 2</span>
           </div>
-        </div>
-
-        <div class="kdigo-box">
-          <div class="kdigo-badge">KDIGO 2021</div>
-          <div class="kdigo-text">
-            <strong>Taper Rápido — Enfermedades Glomerulares</strong>
-            <p>Inicio con dosis calculada (máx. 80 mg/día) con reducción progresiva hasta 5 mg en 12 a 18 semanas según la dosis inicial. Requiere definir fecha de inicio y peso del paciente.</p>
-          </div>
-          <button class="btn btn-outline-primary" onclick="applyKDIGOPreset()" id="kdigo-btn">
-            Aplicar esquema →
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- ── Card 2: Constructor del Taper ── -->
-    <div class="card" id="builder-card">
+    <!-- ── PASO 2: Cómo armar la reducción ── -->
+    <div class="card step-card locked" id="paso2">
       <div class="card-header">
         <div class="card-title">
-          <span class="card-icon">📅</span>
-          <h2>Constructor del Taper</h2>
+          <span class="step-num" id="paso2-num">2</span>
+          <h2>¿Cómo quieres armar la reducción?</h2>
         </div>
-        <div class="start-row">
-          <label for="global-start">Fecha de inicio:</label>
-          <input type="date" id="global-start" onchange="handleStartChange()" />
-        </div>
+        <span class="step-status" id="paso2-status">Primero completa el paso 1</span>
       </div>
       <div class="card-body">
+        <div class="option-grid">
 
-        <!-- Auto Reduction Rules -->
-        <div class="auto-section">
-          <div class="auto-header toggle-header" onclick="toggleSection('auto-body','auto-chev')">
-            <span class="label-sm">⚡ Reducción Automática (opcional)</span>
-            <svg id="auto-chev" class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          <div class="option-card" id="opt-kdigo">
+            <div class="option-head">
+              <span class="kdigo-badge">KDIGO 2021</span>
+              <span class="option-tag">Recomendado</span>
+            </div>
+            <h3>Esquema KDIGO</h3>
+            <p>Lo arma completo en un clic: dosis inicial 4 semanas, luego −10 mg/semana hasta 20, −5 mg/semana hasta 10, 7.5 mg 2 semanas y 5 mg 4 semanas. Después puedes ajustar cualquier escalón.</p>
+            <button class="btn btn-primary" id="kdigo-btn" onclick="applyKDIGOPreset()">Aplicar esquema KDIGO →</button>
           </div>
-          <div id="auto-body" class="auto-body collapsed">
-            <p class="auto-hint">Define reglas encadenadas. Ej: reducir 10 mg cada semana hasta 20 mg; luego 2.5 mg cada 2 semanas hasta 2.5 mg.</p>
-            <div id="auto-rules-list"></div>
-            <div class="auto-actions">
-              <button class="btn btn-ghost" onclick="addAutoRule()">+ Agregar regla</button>
-              <button class="btn btn-primary-sm" onclick="applyAutoRules()">Generar taper automático →</button>
+
+          <div class="option-card" id="opt-rules">
+            <div class="option-head"><span class="option-icon">⚡</span></div>
+            <h3>Reglas de reducción</h3>
+            <p>Tú defines "bajar X mg cada Y semanas hasta Z mg", encadenando las reglas que necesites, y la página calcula los escalones.</p>
+            <button class="btn btn-outline-primary" id="rules-btn" onclick="toggleRules()">Definir reglas</button>
+            <div id="auto-body" class="auto-body collapsed">
+              <div id="auto-rules-list"></div>
+              <div class="auto-actions">
+                <button class="btn btn-ghost" onclick="addAutoRule()">+ Agregar regla</button>
+                <button class="btn btn-primary-sm" id="rules-apply-btn" onclick="applyAutoRules()">Generar esquema →</button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Taper Table -->
-        <div class="taper-table-wrap">
-          <table class="taper-table">
-            <thead>
-              <tr>
-                <th>Dosis <span class="th-sub">mg/día</span></th>
-                <th>Duración</th>
-                <th>Inicio</th>
-                <th>Fin</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="taper-body"></tbody>
-          </table>
-        </div>
-        <div class="table-actions">
-          <button class="btn btn-ghost" onclick="addRow()">+ Agregar dosis</button>
-          <button class="btn btn-danger-ghost" onclick="clearAll()">↺ Limpiar todo</button>
-        </div>
+          <div class="option-card" id="opt-manual">
+            <div class="option-head"><span class="option-icon">✏️</span></div>
+            <h3>A mano</h3>
+            <p>Empiezas con la dosis inicial y vas agregando escalones uno a uno: cuánto, por cuánto tiempo. Control total.</p>
+            <button class="btn btn-outline-primary" id="manual-btn" onclick="startManual()">Empezar con la dosis inicial →</button>
+          </div>
 
+        </div>
       </div>
     </div>
 
-    <!-- ── Card 3: Vista Previa ── -->
-    <div class="card" id="preview-card">
+    <!-- ── PASO 3: Esquema y hoja para el paciente ── -->
+    <div class="card step-card" id="paso3">
       <div class="card-header">
         <div class="card-title">
-          <span class="card-icon">📊</span>
-          <h2>Vista Previa del Esquema</h2>
+          <span class="step-num" id="paso3-num">3</span>
+          <h2>Esquema y hoja para el paciente</h2>
         </div>
-        <button class="btn btn-primary print-btn" onclick="printReport()">
+        <button class="btn btn-primary print-btn" id="print-btn" onclick="printReport()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Generar PDF / Imprimir
+          Imprimir / PDF
         </button>
       </div>
       <div class="card-body">
         <div id="preview-empty" class="preview-empty">
           <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" width="48" height="48"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/></svg>
-          <p>Agrega filas de dosis para ver el esquema.</p>
+          <p>Aquí aparecerá el esquema cuando lo armes en el paso 2. Siempre podrás editarlo.</p>
         </div>
         <div id="preview-content" style="display:none">
+          <p class="table-hint">Edita dosis o duración directamente en la tabla. Las fechas se recalculan solas.</p>
+          <div class="taper-table-wrap">
+            <table class="taper-table">
+              <thead>
+                <tr>
+                  <th>Dosis <span class="th-sub">mg/día</span></th>
+                  <th>Duración</th>
+                  <th>Inicio</th>
+                  <th>Fin</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="taper-body"></tbody>
+            </table>
+          </div>
+          <div class="table-actions">
+            <button class="btn btn-ghost" onclick="addRow()">+ Agregar escalón</button>
+            <button class="btn btn-danger-ghost" onclick="clearAll()">↺ Limpiar esquema</button>
+          </div>
           <div id="preview-bars" class="preview-bars"></div>
           <div id="preview-table-wrap"></div>
         </div>
@@ -197,6 +205,8 @@
     </div>
 
   </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <footer class="site-footer">
     <p>Herramienta clínica basada en guías <strong>KDIGO 2021</strong> · Uso médico exclusivo · No reemplaza el criterio clínico del especialista</p>
