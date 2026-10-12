@@ -208,7 +208,7 @@ function _show(id) { document.getElementById(id).style.display = ''; }
 function _hide(id) { document.getElementById(id).style.display = 'none'; }
 
 
-// ── Preset KDIGO 2021 — Taper rápido ~16 semanas ─────────────
+// ── Preset KDIGO 2021 — Taper rápido 12–18 semanas ───────────
 function applyKDIGOPreset() {
   const startInput = document.getElementById('global-start').value;
   if (!startInput) {
@@ -249,10 +249,10 @@ function generateKDIGOSteps(startDose) {
     cur = +Math.max(cur - 5, 10).toFixed(1);
     steps.push({ dose: cur, days: 7 });
   }
-  // Fase 4: 7.5 mg × 2 semanas
-  steps.push({ dose: 7.5, days: 14 });
-  // Fase 5: 5 mg × 4 semanas (cierre)
-  steps.push({ dose: 5, days: 28 });
+  // Fase 4: 7.5 mg × 2 semanas (solo si la dosis actual es mayor)
+  if (cur > 7.5) steps.push({ dose: 7.5, days: 14 });
+  // Fase 5: 5 mg × 4 semanas (cierre; si ya se inició en 5 mg, la fase 1 es el cierre)
+  if (cur > 5) steps.push({ dose: 5, days: 28 });
   return steps;
 }
 
@@ -536,20 +536,6 @@ function printReport() {
 
   window.print();
 }
-
-// ── Contador de visitas ───────────────────────────────────────
-(function () {
-  fetch('https://api.counterapi.dev/v1/jalzam-taper-prednisolona/visits/up')
-    .then(r => r.json())
-    .then(d => {
-      const el = document.getElementById('visit-count');
-      if (el && d?.count != null) el.textContent = Number(d.count).toLocaleString();
-    })
-    .catch(() => {
-      const el = document.getElementById('visit-count');
-      if (el) el.textContent = '--';
-    });
-})();
 
 // ── Reset completo ────────────────────────────────────────────
 function fullReset() {

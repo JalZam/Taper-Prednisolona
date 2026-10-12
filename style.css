@@ -63,14 +63,6 @@ body {
   line-height: 1.1;
 }
 .logo-sub { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; margin-top: 1px; }
-.visit-counter {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
 .header-right {
   display: flex;
   align-items: center;
